@@ -57,10 +57,7 @@ class Kibot(object):
         widget's position.
         """
         fmp = FakeMouseEventProvider.instance
-        if widget is not None:
-            x, y = widget.center_x, widget.center_y
-
-        self.do(partial(fmp.mouse_down, x, y, 'left'))
+        self.do(partial(self._do_input, fmp.mouse_down, x, y))
 
     def do_release(self, x=0, y=0, widget=None):
         """touch_up event
@@ -71,12 +68,12 @@ class Kibot(object):
         if widget is not None:
             x, y = widget.center_x, widget.center_y
 
-        self.do(partial(fmp.mouse_up, x, y, 'left'))
+        self.do(partial(self._do_input, fmp.mouse_up, x, y))
 
     def do_move(self, x=0, y=0, widget=None):
         """mouse move event"""
         fmp = FakeMouseEventProvider.instance
-        self.do(partial(fmp.move, x, y))
+        self.do(partial(self._do_input, fmp.move, x, y))
 
     def do_click(self, x=0, y=0, t=0.2, widget=None):
         """press, wait and release event
@@ -87,6 +84,15 @@ class Kibot(object):
         self.do_press(x, y, widget)
         self.wait(t)
         self.do_release(x, y, widget)
+
+    def _do_input(self, func, x, y, widget=None):
+        fmp = FakeMouseEventProvider.instance
+        if widget is not None:
+            x, y = widget.center_x, widget.center_y
+        if func != fmp.move:
+            func(x, y, 'left')
+        else:
+            func(x, y)
 
     def do(self, func):
         self.last = Clock.schedule_once(
