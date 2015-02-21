@@ -41,6 +41,7 @@ class Kibot(object):
     time_cnt = 0
     num_events = 0
     delta_time = 0.1  # Time to wait between events.
+    errors = []
 
     def __init__(self, *args, **kwargs):
         self.app = args[0]
@@ -133,7 +134,10 @@ class Kibot(object):
         self.num_events += 1
 
     def _event(self, func, t=0):
-        func()
+        try:
+            func()
+        except Exception as e:
+            self.errors.append(e)
         self.num_events -= 1
 
     def wait_until(self):
@@ -151,11 +155,16 @@ class Kibot(object):
         attrs, values = zip(*kwargs.items())
         root = self.app.root if root is None else root
         b = True
+        ids = root.ids
         for wid in root.children:
             b = True
             for attr, value in kwargs.iteritems():
                 if attr == 'class_':
                     if not isinstance(wid, getattr(Factory, value)):
+                        b = False
+                elif attr == 'id':
+                    if not any([w == wid and value == id_
+                                for id_, w in ids.iteritems()]):
                         b = False
                 elif not hasattr(wid, attr):
                     b = False
@@ -178,6 +187,7 @@ class Kibot(object):
 
     def reset(self, reset_app=False):
         self.time_cnt = 0
+        self.errors = []
         if reset_app:
             self.do(self._reset_app)
 
