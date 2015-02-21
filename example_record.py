@@ -2,7 +2,7 @@ from kibot import Kibot
 from kivy.factory import Factory
 
 if __name__ == '__main__':
-    # A kibot testing example
+    # A kibot recording example
     from kivy.app import App
     from kivy.lang import Builder
     kv = """
@@ -30,7 +30,7 @@ if __name__ == '__main__':
         kibot.execute_record()
 
     Builder.load_string(kv)
-    app = TestApp()  # Do not run the app!
+    app = TestApp()
     kibot = Kibot(app)
     kibot.record()  # Record events
     #  Comment previous line and uncomment next one to execute recorded events

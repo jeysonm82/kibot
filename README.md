@@ -14,7 +14,7 @@ Current features:
 Usage
 =====
 
-Check sample_testing.py for a TestCase example and sample_record.py for a recording example
+Check example_testing.py for a TestCase example and example_record.py for a recording example
 
 
 License
