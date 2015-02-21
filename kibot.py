@@ -212,9 +212,9 @@ class Kibot(object):
         # self.app._install_settings_keys(window)
         self.app.dispatch('on_start')
 
-    def record(self, name='test.kibot'):
-        """records input operations in app"""
-        self.record_fname = name
+    def record(self, filename='test.kibot'):
+        """Records input operations (touches, keystrokes) and saves it to a file"""
+        self.record_fname = filename
         self._lasttime = time.time()
         self.recorded_commands = []
         self._last_pos = -100, 0
@@ -270,15 +270,16 @@ class Kibot(object):
         cmd = "%s.do_move(x=%s, y=%s)" % (self._kibot_cmd, x, y)
         self._record_command(cmd)
 
-    def execute_record(self, name='test.kibot'):
-        self.do(partial(self._execute, name))
+    def execute_record(self, filename='test.kibot'):
+        """Executes kibot file"""
+        self.do(partial(self._execute, filename))
 
     def _execute(self, name):
         with open(name, 'r') as f:
             data = f.read()
             commands = data.split('\n')
             for cmd in commands:
-                exec(cmd)
+                exec(cmd)  # TODO is this dangerous?
 
     def __del__(self):
         if len(self.record_fname):
