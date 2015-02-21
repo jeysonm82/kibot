@@ -17,7 +17,6 @@ class FakeMouseEventProvider(MouseMotionEventProvider):
     instance = None
 
     def start(self):
-        print "FakeMouseProvider started"
         FakeMouseEventProvider.instance = self
         self.win = EventLoop.window
 
@@ -43,7 +42,9 @@ class Kibot(object):
 
     def __init__(self, *args, **kwargs):
         self.app = args[0]
-        self.time_cnt = 0
+        self.time_cnt = 1
+        self.win = EventLoop.window
+        self.keyboard = self.win._system_keyboard
 
     def wait(self, t=0):
         """Waits specified time
@@ -57,7 +58,7 @@ class Kibot(object):
         widget's position.
         """
         fmp = FakeMouseEventProvider.instance
-        self.do(partial(self._do_input, fmp.mouse_down, x, y))
+        self.do(partial(self._do_input, fmp.mouse_down, x, y, widget))
 
     def do_release(self, x=0, y=0, widget=None):
         """touch_up event
@@ -65,18 +66,15 @@ class Kibot(object):
         widget's position.
         """
         fmp = FakeMouseEventProvider.instance
-        if widget is not None:
-            x, y = widget.center_x, widget.center_y
-
-        self.do(partial(self._do_input, fmp.mouse_up, x, y))
+        self.do(partial(self._do_input, fmp.mouse_up, x, y, widget))
 
     def do_move(self, x=0, y=0, widget=None):
         """mouse move event"""
         fmp = FakeMouseEventProvider.instance
-        self.do(partial(self._do_input, fmp.move, x, y))
+        self.do(partial(self._do_input, fmp.move, x, y, widget))
 
     def do_click(self, x=0, y=0, t=0.2, widget=None):
-        """press, wait and release event
+        """ Press a widget (press, wait, and release)
         :param widget: if widget is provided x abd y are obtained from
         widget's position.
         :param t: time to wait between press and release
@@ -88,11 +86,43 @@ class Kibot(object):
     def _do_input(self, func, x, y, widget=None):
         fmp = FakeMouseEventProvider.instance
         if widget is not None:
-            x, y = widget.center_x, widget.center_y
+            if round(x) - x == 0 and round(y) - y == 0:
+                x, y = widget.center_x, widget.center_y
+            else:
+                # TODO pending document this
+                pos = widget.pos
+                size = widget.size
+                x = pos[0] + size[0] * x
+                y = pos[1] + size[1] * y
+
+            y = self.win.height - y
         if func != fmp.move:
             func(x, y, 'left')
         else:
             func(x, y)
+
+    def do_keystroke(self, key=None, text=None):
+        """ Sends keystroke using active keyboard.
+        Check kivy.core.window.KeyBoard.keycodes for keys
+        :param key: key string (ex: 'a')
+        :param text: optional, if specified, keyboard will send this text all
+        at once.
+        """
+        # TODO pending modifiers (shift, ctrl, etc)
+        self.do(partial(self._keydown, key, text))
+        self.do(partial(self._keyup, key))
+
+    def _keyup(self, key):
+        keycode = self.keyboard.string_to_keycode(key)
+        self.keyboard.dispatch('on_key_up', (keycode, key))
+
+    def _keydown(self, key, text=None):
+        if key is None:
+            key = text[0]  # TODO is this ok?
+        keycode = self.keyboard.string_to_keycode(key)
+        if text is None and len(key) == 1:
+            text = key
+        self.keyboard.dispatch('on_key_down', (keycode, key), text, '')
 
     def do(self, func):
         self.last = Clock.schedule_once(
@@ -148,15 +178,15 @@ class Kibot(object):
         self.time_cnt = 0
 
 
-class KibotTestBase(unittest.TestCase):
+class KibotTestCase(unittest.TestCase):
 
-    """ Base kibot testcase """
+    """ Base kibot testcase. Your tests should inherit from here """
     app = None
     """App instance """
 
 
 def _runtests(app):
-    time.sleep(1)
+    time.sleep(1)  # TODO how much time to wait?
     unittest.main()
     app.stop()  # TODO this is not working, line not reached.
 
@@ -168,7 +198,7 @@ def run_kibot_tests(app):
     tl = Thread(target=_runtests, args=(app,))
     tl.daemon = True
     tl.start()
-    KibotTestBase.app = app
+    KibotTestCase.app = app
     app.run()
 
 Config.set("input", "fakemouseprovider", "fakemouseprovider")

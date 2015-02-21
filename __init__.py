@@ -1,1 +1,1 @@
-from kibot import Kibot, KibotTestBase
+from kibot import Kibot, KibotTestCase
