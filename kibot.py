@@ -42,6 +42,9 @@ class Kibot(object):
     num_events = 0
     delta_time = 0.1  # Time to wait between events.
     errors = []
+    _kibot_cmd = 'self'
+    recorded_commands = []
+    record_fname = ''
 
     def __init__(self, *args, **kwargs):
         self.app = args[0]
@@ -112,20 +115,25 @@ class Kibot(object):
         at once.
         """
         # TODO pending modifiers (shift, ctrl, etc)
-        self.do(partial(self._keydown, key, text))
-        self.do(partial(self._keyup, key))
+        self.do_keydown(key, text)
+        self.do_keyup(key)
 
-    def _keyup(self, key):
+    def do_keyup(self, key):
         keycode = self.keyboard.string_to_keycode(key)
-        self.keyboard.dispatch('on_key_up', (keycode, key))
+        self.do(partial(self.keyboard.dispatch, 'on_key_up', (keycode, key)))
 
-    def _keydown(self, key, text=None):
+    def do_keydown(self, key, text=None):
         if key is None:
             key = text[0]  # TODO is this ok?
         keycode = self.keyboard.string_to_keycode(key)
         if text is None and len(key) == 1:
             text = key
-        self.keyboard.dispatch('on_key_down', (keycode, key), text, '')
+        if key == 'spacebar' or key == ' ':
+            text = ' '
+            key = 'spacebar'
+
+        self.do(
+            partial(self.keyboard.dispatch, 'on_key_down', (keycode, key), text, ''))
 
     def do(self, func):
         self.last = Clock.schedule_once(
@@ -203,6 +211,79 @@ class Kibot(object):
         window.clear()
         # self.app._install_settings_keys(window)
         self.app.dispatch('on_start')
+
+    def record(self, name='test.kibot'):
+        """records input operations in app"""
+        self.record_fname = name
+        self._lasttime = time.time()
+        self.recorded_commands = []
+        self._last_pos = -100, 0
+        self.keyboard.bind(on_key_down=self._record_on_key_down)
+        self.keyboard.bind(on_key_up=self._record_on_key_up)
+        self.win.bind(on_touch_down=self._record_on_touch_down)
+        self.win.bind(on_touch_up=self._record_on_touch_up)
+        self.win.bind(on_touch_move=self._record_on_touch_move)
+
+    def _record_command(self, cmd):
+        if len(self.recorded_commands):
+            self.recorded_commands.append(
+                "%s.wait(%s)" % (self._kibot_cmd, round(time.time() - self._lasttime, 2)))
+        self.recorded_commands.append(cmd)
+        self._lasttime = time.time()
+
+    def _record_on_key_down(self, *args):
+        key, text = args[1][1], None
+        print args
+        cmd = "%s.do_keydown('%s', %s)" % (self._kibot_cmd, key, text)
+        self._record_command(cmd)
+
+    def _record_on_key_up(self, *args):
+        key = args[1][1]
+        cmd = "%s.do_keyup('%s')" % (self._kibot_cmd, key)
+        self._record_command(cmd)
+
+    def _record_on_touch_down(self, *args):
+        event = args[1]
+        w, h = self.win.width, self.win.height
+        x, y = event.spos
+        x, y = x * w, h - y * h
+        cmd = "%s.do_press(x=%s, y=%s)" % (self._kibot_cmd, x, y)
+        self._record_command(cmd)
+
+    def _record_on_touch_up(self, *args):
+        event = args[1]
+        w, h = self.win.width, self.win.height
+        x, y = event.spos
+        x, y = x * w, h - y * h
+        cmd = "%s.do_release(x=%s, y=%s)" % (self._kibot_cmd, x, y)
+        self._record_command(cmd)
+
+    def _record_on_touch_move(self, *args):
+        event = args[1]
+        w, h = self.win.width, self.win.height
+        x, y = event.spos
+        x, y = x * w, h - y * h
+        # This allows not to record touch_move events that are too close
+        if (abs(self._last_pos[0] - x) + abs(self._last_pos[1] - y)) < 5:
+            return
+        self._last_pos = x, y
+        cmd = "%s.do_move(x=%s, y=%s)" % (self._kibot_cmd, x, y)
+        self._record_command(cmd)
+
+    def execute_record(self, name='test.kibot'):
+        self.do(partial(self._execute, name))
+
+    def _execute(self, name):
+        with open(name, 'r') as f:
+            data = f.read()
+            commands = data.split('\n')
+            for cmd in commands:
+                exec(cmd)
+
+    def __del__(self):
+        if len(self.record_fname):
+            with open(self.record_fname, 'w') as f:
+                f.write('\n'.join(self.recorded_commands))
 
 
 class KibotTestCase(unittest.TestCase):
