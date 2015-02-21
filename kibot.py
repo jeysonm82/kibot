@@ -223,8 +223,10 @@ class KibotTestCase(unittest.TestCase):
 
 def _runtests(app):
     time.sleep(1)  # TODO how much time to wait?
-    unittest.main()
-    app.stop()  # TODO this is not working, line not reached.
+    try:
+        unittest.main()
+    finally:
+        app.stop()
 
 
 def run_kibot_tests(app):
