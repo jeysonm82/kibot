@@ -39,6 +39,7 @@ class Kibot(object):
     app = None
     time_cnt = 0
     num_events = 0
+    delta_time = 0.1  # Time to wait between events.
 
     def __init__(self, *args, **kwargs):
         self.app = args[0]
@@ -127,7 +128,7 @@ class Kibot(object):
     def do(self, func):
         self.last = Clock.schedule_once(
             partial(self._event, func), self.time_cnt)
-        self.time_cnt += 0.1
+        self.wait(self.delta_time)
         self.num_events += 1
 
     def _event(self, func, t=0):
