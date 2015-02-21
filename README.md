@@ -6,7 +6,7 @@ Kibot
 Kibot intends to become a GUI test automation tool for kivy. Works in pc (windows, linux, mac?)
 
 Current features:
-- Finding widgets using properties filters.
+- Finding widgets filtering by property values.
 - Clicking/pressing down a widget.
 - Sending keystrokes using window keyboard
 
