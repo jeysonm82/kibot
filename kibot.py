@@ -8,6 +8,7 @@ import time
 from kivy.factory import Factory
 import unittest
 from threading import Thread
+from kivy.uix.button import Button
 
 
 class FakeMouseEventProvider(MouseMotionEventProvider):
@@ -175,8 +176,23 @@ class Kibot(object):
                     return ret
         return None  # TODO maybe Raise NotFoundException?
 
-    def reset(self):
+    def reset(self, reset_app=False):
         self.time_cnt = 0
+        if reset_app:
+            self.do(self._reset_app)
+
+    def _reset_app(self, *args):
+        # More or less the same initializacion in App.run without RounTouchApp
+        window = EventLoop.window
+        window.remove_widget(self.app.root)
+        # self.app.load_config()
+        # self.app.load_kv(filename=self.app.kv_file)
+        r = self.app.build()
+        window.add_widget(r)
+        self.app.root = r
+        window.clear()
+        # self.app._install_settings_keys(window)
+        self.app.dispatch('on_start')
 
 
 class KibotTestCase(unittest.TestCase):
@@ -184,6 +200,25 @@ class KibotTestCase(unittest.TestCase):
     """ Base kibot testcase. Your tests should inherit from here """
     app = None
     """App instance """
+
+    reset_app = True
+    """ If True app will be reset before each test """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.kibot = Kibot(cls.app)
+
+    def setUp(self):
+        if self.reset_app:
+            self.kibot.reset(True)
+            self.kibot.wait_until()  # Wait until app reseted
+            self.setUp_app(self.app)
+        else:
+            self.kibot.reset()
+
+    def setUp_app(self, app):
+        """Aditional initialization/reset for your app"""
+        pass
 
 
 def _runtests(app):

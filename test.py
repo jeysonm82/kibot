@@ -1,4 +1,5 @@
 from kibot import Kibot, KibotTestCase, run_kibot_tests
+from kivy.factory import Factory
 
 
 class KibotTestExample(KibotTestCase):
@@ -6,7 +7,7 @@ class KibotTestExample(KibotTestCase):
     def test_button_text_equals_pressed(self):
         """Test that my_button has proper text after one click/touch """
 
-        kibot = Kibot(self.app)
+        kibot = self.kibot
         # find button by tag property
         my_button = kibot.find(text="Kibot Test")
         kibot.do_click(widget=my_button)  # click my button
@@ -17,7 +18,7 @@ class KibotTestExample(KibotTestCase):
 
     def test_textinput(self):
         """Test that my_textinput has proper text after keyboard input"""
-        kibot = Kibot(self.app)
+        kibot = self.kibot
         my_textinput = kibot.find(class_="TextInput")
         kibot.do_click(widget=my_textinput)
         kibot.do_keystroke(text="hello")  # Sends hello using keyboard
@@ -30,7 +31,7 @@ class KibotTestExample(KibotTestCase):
     def test_slider_and_label(self):
         """Test that slider has proper value and label has proper text after
         touch"""
-        kibot = Kibot(self.app)
+        kibot = self.kibot
         my_slider = kibot.find(class_="Slider")
         my_label = kibot.find(class_="Label")
         # touch at x=79% of widget's width, and y=50% of widget's height
@@ -52,7 +53,7 @@ if __name__ == '__main__':
     from kivy.app import App
     from kivy.lang import Builder
     kv = """
-BoxLayout:
+<RootWidget@BoxLayout>:
     orientation: 'vertical'
     BoxLayout:
         Button:
@@ -70,7 +71,8 @@ BoxLayout:
     class TestApp(App):
 
         def build(self):
-            return Builder.load_string(kv)
+            return Factory.RootWidget()
 
+    Builder.load_string(kv)
     app = TestApp()  # Do not run the app!
     run_kibot_tests(app)  # This  runs the app and calls unittest.main()
