@@ -26,9 +26,6 @@ if __name__ == '__main__':
         def build(self):
             return Factory.RootWidget()
 
-    def test(t):
-        kibot.execute_record()
-
     Builder.load_string(kv)
     app = TestApp()
     kibot = Kibot(app)
