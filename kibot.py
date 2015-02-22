@@ -8,7 +8,6 @@ import time
 from kivy.factory import Factory
 import unittest
 from threading import Thread
-from kivy.uix.button import Button
 
 
 class FakeMouseEventProvider(MouseMotionEventProvider):
@@ -33,14 +32,12 @@ class FakeMouseEventProvider(MouseMotionEventProvider):
 
 class Kibot(object):
 
-    """Kibot intends to become a GUI test automation tool for kivy.
-    Works in pc (windows, linux, mac?).
-    """
+    """Kibot is a basic GUI test automation tool for kivy."""
 
     app = None
     time_cnt = 0
     num_events = 0
-    delta_time = 0.1  # Time to wait between events.
+    delta_time = 0.05  # Time to wait between events.
     errors = []
     _kibot_cmd = 'self'
     recorded_commands = []
@@ -153,7 +150,7 @@ class Kibot(object):
         while self.num_events:  # Warning could result in infinite loop
             pass
 
-    def find(self, root=None, **kwargs):
+    def find(self, root=None, *args, **kwargs):
         """ Find first widget in widget tree with specified properties values
         Ex: find(class_='Button', text='Text')
         :param root: Root widget, if None App.root is used.
@@ -163,7 +160,8 @@ class Kibot(object):
         attrs, values = zip(*kwargs.items())
         root = self.app.root if root is None else root
         b = True
-        ids = root.ids
+        prev_ids = args[0] if len(args) else {}
+        ids = root.ids if len(root.ids) else prev_ids
         for wid in root.children:
             b = True
             for attr, value in kwargs.iteritems():
@@ -188,7 +186,7 @@ class Kibot(object):
         # Search inside children
         for wid in root.children:
             if len(wid.children):
-                ret = self.find(wid, **kwargs)
+                ret = self.find(wid, ids, **kwargs)
                 if ret is not None:
                     return ret
         return None  # TODO maybe Raise NotFoundException?
@@ -230,6 +228,7 @@ class Kibot(object):
                 "%s.wait(%s)" % (self._kibot_cmd, round(time.time() - self._lasttime, 2)))
         self.recorded_commands.append(cmd)
         self._lasttime = time.time()
+        print "Recording command:", cmd
 
     def _record_on_key_down(self, *args):
         key, text = args[1][1], None
@@ -289,12 +288,12 @@ class Kibot(object):
 
 class KibotTestCase(unittest.TestCase):
 
-    """ Base kibot testcase. Your tests should inherit from here """
+    """ Base kibot testcase. Your tests should inherit from this """
     app = None
     """App instance """
 
     reset_app = True
-    """ If True app will be reset before each test """
+    """ If True app will be reseted before each test """
 
     @classmethod
     def setUpClass(cls):
@@ -322,7 +321,7 @@ def _runtests(app):
 
 
 def run_kibot_tests(app):
-    """ Perform the tests by calling app.run in the main thread and
+    """ Performs the tests by calling app.run in the main thread and
     unittest.main in a daemon. """
 
     tl = Thread(target=_runtests, args=(app,))

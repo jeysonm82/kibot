@@ -37,7 +37,6 @@ class KibotTestExample(KibotTestCase):
         # touch at x=79% of widget's width, and y=50% of widget's height
         # relative to widget's position
         kibot.do_press(widget=my_slider, x=0.0, y=0.5)
-        kibot.delta_time = 0.05
         for i in range(80):
             kibot.do_move(widget=my_slider, x=i / 100., y=0.5)
         kibot.do_release(widget=my_slider, x=0.0, y=0.5)
