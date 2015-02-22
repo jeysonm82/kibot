@@ -189,7 +189,7 @@ class Kibot(object):
                 ret = self.find(wid, ids, **kwargs)
                 if ret is not None:
                     return ret
-        return None  # TODO maybe Raise NotFoundException?
+        return None
 
     def reset(self, reset_app=False):
         self.time_cnt = 0
@@ -284,6 +284,10 @@ class Kibot(object):
         if len(self.record_fname):
             with open(self.record_fname, 'w') as f:
                 f.write('\n'.join(self.recorded_commands))
+
+
+class WidgetNotFoundError(Exception):
+    pass
 
 
 class KibotTestCase(unittest.TestCase):
